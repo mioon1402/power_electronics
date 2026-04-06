@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOSFET 시뮬레이터</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 40px;
+        }
+        
+        @media (max-width: 1024px) {
+            .content {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .control-panel {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .control-group {
+            margin-bottom: 25px;
+        }
+        
+        .control-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 0.95em;
+        }
+        
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: #dee2e6;
+            outline: none;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.4);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 5px rgba(102, 126, 234, 0.4);
+        }
+        
+        .value-display {
+            min-width: 90px;
+            text-align: right;
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1em;
+        }
+        
+        .parameter-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 25px;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #dee2e6;
+        }
+        
+        .parameter-item {
+            padding: 10px;
+        }
+        
+        .parameter-label {
+            font-size: 0.85em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .parameter-value {
+            font-size: 1.3em;
+            font-weight: 700;
+            color: #764ba2;
+        }
+        
+        .operation-region {
+            padding: 15px;
+            border-radius: 8px;
+            font-weight: 600;
+            text-align: center;
+            margin-top: 15px;
+            font-size: 1.05em;
+        }
+        
+        .region-cutoff {
+            background: #ffe5e5;
+            color: #d32f2f;
+            border: 2px solid #d32f2f;
+        }
+        
+        .region-linear {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 2px solid #1976d2;
+        }
+        
+        .region-saturation {
+            background: #e8f5e9;
+            color: #388e3c;
+            border: 2px solid #388e3c;
+        }
+        
+        .chart-container {
+            position: relative;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .chart-title {
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.1em;
+        }
+        
+        .info-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 0.9em;
+            color: #333;
+            margin-top: 20px;
+        }
+        
+        .info-box strong {
+            color: #667eea;
+        }
+        
+        .footer {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            color: #666;
+            border-top: 1px solid #e9ecef;
+            font-size: 0.9em;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.95em;
+        }
+        
+        .btn-reset {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #d32f2f;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(244, 67, 54, 0.3);
+        }
+        
+        .btn-export {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-export:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔌 MOSFET 시뮬레이터</h1>
+            <p>MOSFET의 특성을 실시간으로 확인해보세요</p>
+        </div>
+        
+        <div class="content">
+            <!-- 제어 패널 -->
+            <div class="control-panel">
+                <h2 style="margin-bottom: 20px; color: #333;">⚙️ 조절 설정</h2>
+                
+                <!-- Vgs 조절 -->
+                <div class="control-group">
+                    <label>게이트-소스 전압 (Vgs)</label>
+                    <div class="slider-container">
+                        <input type="range" id="vgsSlider" min="0" max="10" step="0.1" value="5">
+                        <span class="value-display"><span id="vgsValue">5.0</span>V</span>
+                    </div>
+                </div>
+                
+                <!-- Vds 조절 -->
+                <div class="control-group">
+                    <label>드레인-소스 전압 (Vds)</label>
+                    <div class="slider-container">
+                        <input type="range" id="vdsSlider" min="0" max="50" step="0.5" value="10">
+                        <span class="value-display"><span id="vdsValue">10.0</span>V</span>
+                    </div>
+                </div>
+                
+                <!-- 매개변수 표시 -->
+                <h3 style="margin-top: 30px; margin-bottom: 15px; color: #333;">📊 계산된 값</h3>
+                <div class="parameter-grid">
+                    <div class="parameter-item">
+                        <div class="parameter-label">드레인 전류 (Id)</div>
+                        <div class="parameter-value"><span id="idValue">0.00</span>A</div>
+                    </div>
+                    <div class="parameter-item">
+                        <div class="parameter-label">전력소비 (P)</div>
+                        <div class="parameter-value"><span id="powerValue">0.00</span>W</div>
+                    </div>
+                    <div class="parameter-item">
+                        <div class="parameter-label">에이온 저항</div>
+                        <div class="parameter-value"><span id="ronValue">∞</span>Ω</div>
+                    </div>
+                    <div class="parameter-item">
+                        <div class="parameter-label">트랜스컨덕턴스</div>
+                        <div class="parameter-value"><span id="gmValue">0.00</span>S</div>
+                    </div>
+                </div>
+                
+                <!-- 작동 영역 표시 -->
+                <div id="operationRegion" class="operation-region region-cutoff">
+                    차단 영역 (Cutoff)
+                </div>
+                
+                <!-- 버튼 그룹 -->
+                <div class="button-group">
+                    <button class="btn-reset" onclick="resetSimulator()">🔄 초기화</button>
+                    <button class="btn-export" onclick="exportData()">💾 데이터 저장</button>
+                </div>
+                
+                <!-- 정보 박스 -->
+                <div class="info-box">
+                    <strong>💡 Tip:</strong> MOSFET은 Vth(임계전압) 이상일 때 켜집니다. 일반적인 NMOS는 Vth ≈ 1-2V입니다.
+                </div>
+            </div>
+            
+            <!-- 그래프 -->
+            <div class="chart-container">
+                <div class="chart-title">📈 I-V 특성 곡선</div>
+                <canvas id="ivChart"></canvas>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>© 2024 MOSFET 시뮬레이터 | 교육 및 학습용</p>
+        </div>
+    </div>
+    
+    <script>
+        // MOSFET 매개변수 (일반적인 NMOS)
+        const mosfetParams = {
+            Vth: 1.5,           // 임계전압
+            Kn: 0.05,           // 트랜스컨덕턴스 파라미터 (A/V²)
+            lambda: 0.02         // 채널 길이 변조 파라미터
+        };
+        
+        let chart = null;
+        
+        // MOSFET 드레인 전류 계산
+        function calculateId(Vgs, Vds) {
+            const { Vth, Kn, lambda } = mosfetParams;
+            
+            if (Vgs <= Vth) {
+                // 차단 영역
+                return 0;
+            } else if (Vds <= Vgs - Vth) {
+                // 선형 영역 (Triode region)
+                return Kn * ((Vgs - Vth) * Vds - Vds * Vds / 2) * (1 + lambda * Vds);
+            } else {
+                // 포화 영역 (Saturation region)
+                return Kn * (Vgs - Vth) ** 2 / 2 * (1 + lambda * Vds);
+            }
+        }
+        
+        // 작동 영역 판정
+        function getOperationRegion(Vgs, Vds) {
+            const { Vth } = mosfetParams;
+            
+            if (Vgs <= Vth) {
+                return { region: 'cutoff', name: '차단 영역 (Cutoff)', class: 'region-cutoff' };
+            } else if (Vds <= Vgs - Vth) {
+                return { region: 'linear', name: '선형 영역 (Linear)', class: 'region-linear' };
+            } else {
+                return { region: 'saturation', name: '포화 영역 (Saturation)', class: 'region-saturation' };
+            }
+        }
+        
+        // I-V 곡선 그리기
+        function plotIVCharacteristics() {
+            const Vgs = parseFloat(document.getElementById('vgsSlider').value);
+            const Vds = parseFloat(document.getElementById('vdsSlider').value);
+            
+            // 여러 Vgs 값에 대한 특성 곡선 생성
+            const vdsRange = Array.from({ length: 101 }, (_, i) => i * 50 / 100);
+            const vgsValues = [2, 3, 4, 5, 6, 7, 8];
+            
+            const datasets = vgsValues.map((vgs, idx) => {
+                const idArray = vdsRange.map(vd => calculateId(vgs, vd) * 1000); // mA로 변환
+                
+                const color = `hsl(${120 + idx * 30}, 70%, 50%)`;
+                return {
+                    label: `Vgs = ${vgs}V`,
+                    data: idArray,
+                    borderColor: color,
+                    backgroundColor: color + '10',
+                    borderWidth: 2,
+                    fill: false,
+                    tension: 0.3,
+                    pointRadius: 0
+                };
+            });
+            
+            // 현재 작동점 표시
+            const currentId = calculateId(Vgs, Vds) * 1000;
+            datasets.push({
+                label: `작동점 (Vgs=${Vgs}V, Id=${currentId.toFixed(2)}mA)`,
+                data: [{ x: Vds, y: currentId }],
+                borderColor: '#ff0000',
+                backgroundColor: '#ff0000',
+                pointRadius: 8,
+                pointBorderWidth: 2,
+                pointBorderColor: '#fff',
+                showLine: false
+            });
+            
+            if (chart) {
+                chart.destroy();
+            }
+            
+            chart = new Chart(document.getElementById('ivChart'), {
+                type: 'scatter',
+                data: {
+                    datasets: datasets
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    interaction: { mode: 'index', intersect: false },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: { usePointStyle: true, padding: 10 }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            padding: 12,
+                            titleFont: { size: 12 },
+                            bodyFont: { size: 11 }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: 'linear',
+                            title: { display: true, text: 'Vds (V)', font: { weight: 'bold' } },
+                            min: 0,
+                            max: 50
+                        },
+                        y: {
+                            title: { display: true, text: 'Id (mA)', font: { weight: 'bold' } },
+                            min: 0,
+                            max: 500
+                        }
+                    }
+                }
+            });
+        }
+        
+        // 시뮬레이터 업데이트
+        function updateSimulator() {
+            const Vgs = parseFloat(document.getElementById('vgsSlider').value);
+            const Vds = parseFloat(document.getElementById('vdsSlider').value);
+            
+            document.getElementById('vgsValue').textContent = Vgs.toFixed(1);
+            document.getElementById('vdsValue').textContent = Vds.toFixed(1);
+            
+            // Id 계산
+            const Id = calculateId(Vgs, Vds);
+            document.getElementById('idValue').textContent = (Id * 1000).toFixed(2);
+            
+            // 전력 계산
+            const Power = Vds * Id;
+            document.getElementById('powerValue').textContent = (Power * 1000).toFixed(2);
+            
+            // Ron 계산 (선형 영역에서)
+            const { Vth } = mosfetParams;
+            if (Vds > 0 && Vgs > Vth) {
+                const Ron = Vds / (Id + 1e-10);
+                if (Ron < 1000) {
+                    document.getElementById('ronValue').textContent = Ron.toFixed(2);
+                } else {
+                    document.getElementById('ronValue').textContent = '∞';
+                }
+            } else {
+                document.getElementById('ronValue').textContent = '∞';
+            }
+            
+            // gm (트랜스컨덕턴스) 계산
+            const dVgs = 0.001;
+            const Id1 = calculateId(Vgs - dVgs / 2, Vds);
+            const Id2 = calculateId(Vgs + dVgs / 2, Vds);
+            const gm = (Id2 - Id1) / dVgs;
+            document.getElementById('gmValue').textContent = (gm * 1000).toFixed(2);
+            
+            // 작동 영역 표시
+            const regionInfo = getOperationRegion(Vgs, Vds);
+            const regionElement = document.getElementById('operationRegion');
+            regionElement.textContent = regionInfo.name;
+            regionElement.className = 'operation-region ' + regionInfo.class;
+            
+            plotIVCharacteristics();
+        }
+        
+        // 초기화
+        function resetSimulator() {
+            document.getElementById('vgsSlider').value = 5;
+            document.getElementById('vdsSlider').value = 10;
+            updateSimulator();
+        }
+        
+        // 데이터 내보내기
+        function exportData() {
+            const Vgs = parseFloat(document.getElementById('vgsSlider').value);
+            const Vds = parseFloat(document.getElementById('vdsSlider').value);
+            const Id = parseFloat(document.getElementById('idValue').textContent);
+            const Power = parseFloat(document.getElementById('powerValue').textContent);
+            const Ron = document.getElementById('ronValue').textContent;
+            const gm = parseFloat(document.getElementById('gmValue').textContent);
+            
+            const data = `MOSFET 시뮬레이션 데이터\n━━━━━━━━━━━━━━━━━━━\n입력값:\n- Vgs (게이트-소스 전압): ${Vgs}V\n- Vds (드레인-소스 전압): ${Vds}V\n\n출력값:\n- Id (드레인 전류): ${Id}mA\n- P (전력소비): ${Power}mW\n- Ron (에이온 저항): ${Ron}Ω\n- gm (트랜스컨덕턴스): ${gm}mS\n\n생성일: ${new Date().toLocaleString('ko-KR')}`;
+            
+            alert(data);
+        }
+        
+        // 이벤트 리스너
+        document.getElementById('vgsSlider').addEventListener('input', updateSimulator);
+        document.getElementById('vdsSlider').addEventListener('input', updateSimulator);
+        
+        // 초기 실행
+        window.addEventListener('load', updateSimulator);
+    </script>
+</body>
+</html>

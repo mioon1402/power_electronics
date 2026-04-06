@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>MOSFET 간단 시뮬레이터</title>
+    <style>
+        .mosfet-sim {
+            max-width: 500px;
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 10px;
+            color: #333;
+        }
+        .mosfet-sim h3 { color: white; margin: 0 0 15px 0; font-size: 1.3em; }
+        .sim-group {
+            background: white;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            font-size: 0.9em;
+        }
+        .sim-label { font-weight: bold; color: #667eea; margin-bottom: 5px; }
+        .sim-input { width: 100%; padding: 8px; border: 2px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        .sim-value { 
+            display: grid; 
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .sim-val-item {
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            border-left: 3px solid #667eea;
+        }
+        .sim-val-label { font-size: 0.8em; color: #666; margin-bottom: 3px; }
+        .sim-val-text { font-weight: bold; color: #764ba2; font-size: 1.1em; }
+        .sim-region {
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-weight: bold;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .region-cut { background: #ffcdd2; color: #c62828; }
+        .region-lin { background: #bbdefb; color: #1565c0; }
+        .region-sat { background: #c8e6c9; color: #2e7d32; }
+        .sim-btn {
+            width: 100%;
+            padding: 10px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        .sim-btn:hover { background: #5568d3; }
+    </style>
+</head>
+<body>
+    <div class="mosfet-sim">
+        <h3>🔌 MOSFET 시뮬레이터</h3>
+        
+        <div class="sim-group">
+            <div class="sim-label">Vgs (V): <span id="vgs-val">5.0</span></div>
+            <input type="range" id="vgs-input" min="0" max="10" step="0.1" value="5" class="sim-input">
+        </div>
+        
+        <div class="sim-group">
+            <div class="sim-label">Vds (V): <span id="vds-val">10.0</span></div>
+            <input type="range" id="vds-input" min="0" max="50" step="0.5" value="10" class="sim-input">
+        </div>
+        
+        <div class="sim-group">
+            <div class="sim-value">
+                <div class="sim-val-item">
+                    <div class="sim-val-label">Id (mA)</div>
+                    <div class="sim-val-text" id="id-val">0.00</div>
+                </div>
+                <div class="sim-val-item">
+                    <div class="sim-val-label">P (mW)</div>
+                    <div class="sim-val-text" id="power-val">0.00</div>
+                </div>
+            </div>
+            <div id="region" class="sim-region region-cut">차단</div>
+        </div>
+        
+        <button class="sim-btn" onclick="resetSim()">🔄 초기화</button>
+    </div>
+    
+    <script>
+        const params = { Vth: 1.5, Kn: 0.05, lambda: 0.02 };
+        
+        function calcId(Vgs, Vds) {
+            if (Vgs <= params.Vth) return 0;
+            if (Vds <= Vgs - params.Vth) {
+                return params.Kn * ((Vgs - params.Vth) * Vds - Vds * Vds / 2) * (1 + params.lambda * Vds);
+            }
+            return params.Kn * (Vgs - params.Vth) ** 2 / 2 * (1 + params.lambda * Vds);
+        }
+        
+        function getRegion(Vgs, Vds) {
+            if (Vgs <= params.Vth) return { text: '차단', cls: 'region-cut' };
+            if (Vds <= Vgs - params.Vth) return { text: '선형', cls: 'region-lin' };
+            return { text: '포화', cls: 'region-sat' };
+        }
+        
+        function updateSim() {
+            const Vgs = parseFloat(document.getElementById('vgs-input').value);
+            const Vds = parseFloat(document.getElementById('vds-input').value);
+            
+            document.getElementById('vgs-val').textContent = Vgs.toFixed(1);
+            document.getElementById('vds-val').textContent = Vds.toFixed(1);
+            
+            const Id = calcId(Vgs, Vds);
+            const Power = Vds * Id;
+            
+            document.getElementById('id-val').textContent = (Id * 1000).toFixed(2);
+            document.getElementById('power-val').textContent = (Power * 1000).toFixed(2);
+            
+            const region = getRegion(Vgs, Vds);
+            const regionEl = document.getElementById('region');
+            regionEl.textContent = region.text + ' 영역';
+            regionEl.className = 'sim-region ' + region.cls;
+        }
+        
+        function resetSim() {
+            document.getElementById('vgs-input').value = 5;
+            document.getElementById('vds-input').value = 10;
+            updateSim();
+        }
+        
+        document.getElementById('vgs-input').addEventListener('input', updateSim);
+        document.getElementById('vds-input').addEventListener('input', updateSim);
+        updateSim();
+    </script>
+</body>
+</html>
