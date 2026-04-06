@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MOSFET 고급 전자 이동 시뮬레이터</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        
+        .header p {
+            color: #666;
+            font-size: 0.95em;
+        }
+        
+        .sim-area {
+            background: #fafafa;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: center;
+        }
+        
+        canvas {
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            max-width: 100%;
+            display: block;
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .control-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        .control-value {
+            color: #0056b3;
+            font-weight: bold;
+            font-size: 1.1em;
+            margin-bottom: 8px;
+        }
+        
+        .control-value.vds {
+            color: #c9302c;
+        }
+        
+        input[type="range"] {
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: linear-gradient(to right, #ddd 0%, #ddd 100%);
+            outline: none;
+            -webkit-appearance: none;
+            cursor: pointer;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+        }
+        
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+        
+        input[type="range"]::-moz-range-thumb:hover {
+            background: #764ba2;
+            transform: scale(1.2);
+        }
+        
+        .status-box {
+            background: #f1f1f1;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+            font-weight: 600;
+            color: #333;
+            text-align: center;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.95em;
+        }
+        
+        .info-section {
+            background: #e3f2fd;
+            border-left: 4px solid #1976d2;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 0.9em;
+            color: #333;
+            margin-top: 20px;
+            line-height: 1.6;
+        }
+        
+        .info-title {
+            font-weight: 700;
+            color: #1565c0;
+            margin-bottom: 8px;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        button {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-reset {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-reset:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        .btn-demo {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-demo:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+        
+        @media (max-width: 600px) {
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ MOSFET 전자 이동 애니메이션 시뮬레이터</h1>
+            <p>게이트와 드레인 전압을 조절하여 채널 내 전자의 이동을 관찰하세요</p>
+        </div>
+        
+        <div class="sim-area">
+            <canvas id="mosfetCanvas" width="450" height="280"></canvas>
+        </div>
+        
+        <div class="controls">
+            <div class="control-group">
+                <label class="control-label">🔵 게이트 전압 (V_GS)</label>
+                <div class="control-value" style="color: #0056b3;" id="vgsValueDisplay">0.0V</div>
+                <input type="range" id="vgsSlider" min="0" max="10" step="0.1" value="0">
+            </div>
+            <div class="control-group">
+                <label class="control-label">🔴 드레인 전압 (V_DS)</label>
+                <div class="control-value vds" id="vdsValueDisplay">0.0V</div>
+                <input type="range" id="vdsSlider" min="0" max="15" step="0.1" value="0">
+            </div>
+        </div>
+        
+        <div class="status-box" id="statusBox">
+            차단 영역 (Cut-off) - 채널 형성 안됨
+        </div>
+        
+        <div class="info-section">
+            <div class="info-title">📖 작동 원리</div>
+            <ul style="margin-left: 20px;">
+                <li><strong>차단 영역:</strong> V_GS &lt; V_th (채널 형성 안됨)</li>
+                <li><strong>선형 영역:</strong> V_GS ≥ V_th, V_DS &lt; V_GS - V_th (채널 너비 선형 감소)</li>
+                <li><strong>포화 영역:</strong> V_GS ≥ V_th, V_DS ≥ V_GS - V_th (핀치오프 발생)</li>
+            </ul>
+        </div>
+        
+        <div class="button-group">
+            <button class="btn-reset" onclick="resetSimulation()">초기화</button>
+            <button class="btn-demo" onclick="runDemo()">데모 실행</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('mosfetCanvas');
+        const ctx = canvas.getContext('2d');
+        const vgsSlider = document.getElementById('vgsSlider');
+        const vdsSlider = document.getElementById('vdsSlider');
+        const vgsValueDisplay = document.getElementById('vgsValueDisplay');
+        const vdsValueDisplay = document.getElementById('vdsValueDisplay');
+        const statusBox = document.getElementById('statusBox');
+        
+        const Vth = 2.0; // 임계 전압
+        
+        // 전자(입자) 객체 배열 - 150개 입자를 미리 생성
+        let particles = [];
+        for (let i = 0; i < 150; i++) {
+            particles.push({
+                x: 120 + Math.random() * 210,
+                yRatio: Math.random(),
+                speedOffset: 0.5 + Math.random() * 0.8
+            });
+        }
+        
+        let animationId;
+        
+        function draw() {
+            let vgs = parseFloat(vgsSlider.value);
+            let vds = parseFloat(vdsSlider.value);
+            
+            vgsValueDisplay.innerText = vgs.toFixed(1) + 'V';
+            vdsValueDisplay.innerText = vds.toFixed(1) + 'V';
+            
+            // 캔버스 지우기
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // 배경 그리드
+            drawGrid();
+            
+            // 기판 (P-Substrate)
+            ctx.fillStyle = '#e3f2fd';
+            ctx.fillRect(50, 120, 350, 100);
+            ctx.strokeStyle = '#1565c0';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(50, 120, 350, 100);
+            
+            ctx.fillStyle = '#1565c0';
+            ctx.font = 'bold 14px Arial';
+            ctx.fillText('P-Substrate', 170, 195);
+            
+            // 소스 (Source - N형)
+            ctx.fillStyle = '#ffc107';
+            ctx.fillRect(50, 120, 70, 50);
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(50, 120, 70, 50);
+            ctx.fillStyle = '#000';
+            ctx.font = 'bold 12px Arial';
+            ctx.fillText('Source', 55, 155);
+            
+            // 드레인 (Drain - N형)
+            ctx.fillStyle = '#ffc107';
+            ctx.fillRect(330, 120, 70, 50);
+            ctx.strokeStyle = '#ff9800';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(330, 120, 70, 50);
+            ctx.fillStyle = '#000';
+            ctx.fillText('Drain', 340, 155);
+            
+            // 산화막 (SiO2)
+            ctx.fillStyle = '#bdbdbd';
+            ctx.fillRect(120, 105, 260, 15);
+            ctx.strokeStyle = '#616161';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(120, 105, 260, 15);
+            
+            // 게이트 (Gate)
+            ctx.fillStyle = '#424242';
+            ctx.fillRect(120, 75, 260, 30);
+            ctx.strokeStyle = '#212121';
+            ctx.lineWidth = 2;
+            ctx.strokeRect(120, 75, 260, 30);
+            
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('Gate (Electrode)', 250, 97);
+            
+            // 채널 및 전자 애니메이션
+            if (vgs >= Vth) {
+                let channelDepth = (vgs - Vth) * 4; // 게이트 전압에 비례한 채널 깊이
+                let pinchOffVoltage = vgs - Vth;
+                
+                // 채널 배경 그리기
+                ctx.fillStyle = 'rgba(255, 193, 7, 0.3)';
+                ctx.beginPath();
+                ctx.moveTo(120, 120);
+                ctx.lineTo(120, 120 + channelDepth);
+                
+                let drainDepth = channelDepth;
+                if (vds > 0) {
+                    let reduction = (vds / pinchOffVoltage) * channelDepth;
+                    drainDepth = Math.max(2, channelDepth - reduction);
+                }
+                
+                ctx.lineTo(380, 120 + drainDepth);
+                ctx.lineTo(380, 120);
+                ctx.closePath();
+                ctx.fill();
+                
+                // 채널 테두리
+                ctx.strokeStyle = '#ff9800';
+                ctx.lineWidth = 1;
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(120, 120);
+                ctx.lineTo(120, 120 + channelDepth);
+                ctx.lineTo(380, 120 + drainDepth);
+                ctx.lineTo(380, 120);
+                ctx.stroke();
+                ctx.setLineDash([]);
+                
+                // === 전자 애니메이션 ===
+                let activeParticleCount = Math.min(150, Math.floor((vgs - Vth) * 25));
+                let baseSpeed = vds * 0.9;
+                
+                ctx.fillStyle = '#0056b3';
+                for (let i = 0; i < activeParticleCount; i++) {
+                    let p = particles[i];
+                    
+                    // 전자 전진
+                    if (baseSpeed > 0) {
+                        p.x += p.speedOffset * baseSpeed;
+                        if (p.x > 380) p.x = 120;
+                    }
+                    
+                    // 현재 X 위치에서 채널 깊이 계산
+                    let progress = (p.x - 120) / 260;
+                    let currentDepth = channelDepth - (progress * (channelDepth - drainDepth));
+                    
+                    // 전자 좌표 계산 및 렌더링
+                    let pY = 120 + (p.yRatio * currentDepth);
+                    
+                    ctx.beginPath();
+                    ctx.arc(p.x, pY, 2, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                
+                // 상태 텍스트 업데이트
+                ctx.textAlign = 'left';
+                if (vds >= pinchOffVoltage && vds > 0) {
+                    statusBox.innerText = '📊 포화 영역 (Saturation) - 핀치오프 발생! 전자가 병목 구간 통과';
+                    statusBox.style.borderLeftColor = '#d9534f';
+                    statusBox.style.color = '#d9534f';
+                } else if (vds < pinchOffVoltage && vds > 0) {
+                    statusBox.innerText = '📈 선형 영역 (Linear) - 전압에 비례해 전자 속도 증가';
+                    statusBox.style.borderLeftColor = '#5cb85c';
+                    statusBox.style.color = '#5cb85c';
+                } else if (vgs >= Vth) {
+                    statusBox.innerText = '⏳ 채널 형성 완료 - V_DS를 올려 전자를 이동시키세요';
+                    statusBox.style.borderLeftColor = '#f0ad4e';
+                    statusBox.style.color = '#f0ad4e';
+                }
+            } else {
+                statusBox.innerText = '🔐 차단 영역 (Cut-off) - 채널 형성 안됨 (V_GS < V_th)';
+                statusBox.style.borderLeftColor = '#667eea';
+                statusBox.style.color = '#667eea';
+            }
+            
+            animationId = requestAnimationFrame(draw);
+        }
+        
+        function drawGrid() {
+            ctx.strokeStyle = '#f0f0f0';
+            ctx.lineWidth = 0.5;
+            let gridSize = 20;
+            for (let i = 0; i < canvas.width; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(i, 0);
+                ctx.lineTo(i, canvas.height);
+                ctx.stroke();
+            }
+            for (let i = 0; i < canvas.height; i += gridSize) {
+                ctx.beginPath();
+                ctx.moveTo(0, i);
+                ctx.lineTo(canvas.width, i);
+                ctx.stroke();
+            }
+        }
+        
+        function resetSimulation() {
+            vgsSlider.value = 0;
+            vdsSlider.value = 0;
+            particles.forEach(p => {
+                p.x = 120 + Math.random() * 210;
+            });
+        }
+        
+        function runDemo() {
+            // 데모 시뮀 - 자동으로 전압 변화
+            let step = 0;
+            const demoInterval = setInterval(() => {
+                step++;
+                if (step < 40) {
+                    // V_GS 증가
+                    vgsSlider.value = Math.min(10, step * 0.25);
+                } else if (step < 120) {
+                    // V_DS 증가
+                    vdsSlider.value = Math.min(15, (step - 40) * 0.25);
+                } else {
+                    clearInterval(demoInterval);
+                }
+            }, 100);
+        }
+        
+        // 이벤트 리스너
+        vgsSlider.addEventListener('input', () => {
+            particles.forEach(p => p.x = 120 + Math.random() * 210);
+        });
+        
+        vdsSlider.addEventListener('input', () => {
+            // 드레인 전압 변화 반영
+        });
+        
+        // 애니메이션 시작
+        draw();
+    </script>
+</body>
+</html>
